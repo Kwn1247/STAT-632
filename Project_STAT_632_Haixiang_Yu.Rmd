@@ -1,0 +1,100 @@
+---
+title: "STAT 632 Project"
+author: "Haixiang Yu"
+date: "4/28/2022"
+output:
+pdf_document: default
+---
+
+
+```{r}
+pacman::p_load(ggplot2) 
+pacman::p_load(tidyverse)
+dat <- read.csv("drug-use-by-age.csv", header=TRUE)
+head(dat)
+```
+
+
+```{r}
+dat1 <- dat[,c(1,2,3,5,17,19,21,23,25,27)] # keep percentage of use, and four kind of drugs
+head(dat1)
+```
+
+
+```{r}
+attach(dat1)
+#  calculate the number of people who used drugs
+dat1$alcohol <- (n*alcohol.use*.01)
+dat1$marijuana <- (n*marijuana.use*.01)
+dat1$pain.releiver <- (n*pain.releiver.use*.01)
+dat1$sedative <- (n*sedative.use*.01)
+dat1$oxycontin <- (n*oxycontin.use*.01)
+dat1$tranquilizer <- (n*tranquilizer.use*.01)
+dat1$stimulant <- (n*stimulant.use*.01)
+dat1$meth <- (n*meth.use*.01)
+dat2 <- dat1[,c(1,2,3,4,5,6,7,8,9,10)] 
+head(dat2,20)
+```
+
+```{r}
+# clean data
+dat3 <- as.data.frame(dat2, stringsAsFactors = FALSE)
+dat3 <- as.data.frame(apply(dat3,2, as.integer))
+dat3[is.na(dat3)] <- 0
+```
+
+
+```{r}
+# Combined ages groups
+dat3[1,] <- dat3[1,] + dat3[2,] + dat3[3,] + dat3[4,]
+dat3[5,] <- dat3[5,] + dat3[6,] + dat3[7,]
+dat3[8,] <- dat3[8,] + dat3[9,] + dat3[10,]
+dat4 <- dat3[c(1,5,8,11,12,13,14,15,16,17),]# keep
+dat4$age <- c('12-15', '16-18','19-21','22-23','24-15','26-29','30-34','35-49','50-64','65+')
+head(dat4,10)
+```
+
+```{r}
+ggplot(dat4, aes(x = age, y = n, fill = n)) +
+  geom_col() +
+  scale_fill_continuous() +
+  labs(y="sample size (n)", 
+       title = "Drug Use Sample Size by Age") +
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+```{r}
+summary(dat4)
+```
+
+```{r}
+# data set contains all drugs 
+
+dat5 <- gather(dat4, "Drugs", value = "Value", -age, -n)
+head(dat5)
+```
+
+```{r}
+drugbp <- boxplot(Value ~ Drugs, dat5, 
+        col = rainbow(ncol(dat4)), 
+        horizontal = FALSE, xlab = "", 
+        main = "Drug Type Usage Among Respondents", 
+        las = 2, cex.axis = 0.5) 
+```
+
+```{r}
+require(MASS)
+anova(lm(Value ~ age + Drugs, dat5))
+```
+
+```{r}
+cFit2 <- lm(Value ~ age + Drugs, dat5)
+summary(cFit2)
+```
+Results: The age group and drug group variances explains 78.95% variance in respondents medical-use and entertainment-use in an age group in the past 12 months. Since p-value is less than 0.5, the model as a whole is statistically significant.
+
+
+```{r}
+par(mfrow=c(1,2))
+plot(lm(Value ~ age + Drugs, dat5), 1:2)
+```
